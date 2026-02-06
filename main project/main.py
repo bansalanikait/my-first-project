@@ -1,3 +1,11 @@
+import os
+print("RUNNING FROM:", os.getcwd())
+import pandas as pd
+data = pd.read_csv("dataset/phishing.csv")
+print(len(data.columns) - 1)
+print(data.columns)
+
+
 import numpy as np
 import pickle
 from feature_extraction import extract_features
@@ -16,3 +24,6 @@ if prediction[0] == -1:
     print("⚠️ Phishing Website Detected!")
 else:
     print("✅ Legitimate Website")
+
+
+
