@@ -11,10 +11,10 @@ def extract_features(url):
     # 3. '@' symbol
     features.append(-1 if '@' in url else 1)
 
-    # 4. Double slash redirecting
+    # 4. Double slash redirect
     features.append(-1 if url.rfind("//") > 6 else 1)
 
-    # Fill remaining features with safe defaults
+    # Fill remaining features to reach 30
     while len(features) < 30:
         features.append(1)
 

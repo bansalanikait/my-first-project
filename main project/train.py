@@ -8,18 +8,18 @@ from sklearn.metrics import accuracy_score
 # Load dataset
 data = pd.read_csv("dataset/phishing.csv")
 
-# DROP index column if present
+# DROP index column (CRITICAL)
 if "index" in data.columns:
     data = data.drop("index", axis=1)
 
-print("Columns used for training:")
+print("Training columns:")
 print(data.columns)
 
 # Split features and label
 X = data.drop("Result", axis=1)
 y = data["Result"]
 
-print("Number of features:", X.shape[1])
+print("Number of training features:", X.shape[1])
 
 # Train-test split
 X_train, X_test, y_train, y_test = train_test_split(
@@ -39,4 +39,4 @@ os.makedirs("model", exist_ok=True)
 with open("model/model.pkl", "wb") as f:
     pickle.dump(model, f)
 
-print("✅ Model trained and saved")
+print("✅ Model trained and saved correctly")
