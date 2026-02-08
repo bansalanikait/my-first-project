@@ -30,13 +30,17 @@ def domain_age(domain):
 
 
 
+dns_cache = {}
+
 def dns_record(domain):
+    if domain in dns_cache:
+        return dns_cache[domain]
     try:
         socket.gethostbyname(domain)
-        return 1
-    except Exception:
-        stats["dns_fail"] += 1
-        return -1
+        dns_cache[domain] = 1
+    except:
+        dns_cache[domain] = -1
+    return dns_cache[domain]
     
 
 def domain_registration_length(domain):

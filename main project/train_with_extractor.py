@@ -21,17 +21,39 @@ y = []
 
 from tqdm import tqdm
 
-for _, row in tqdm(data.iterrows(), total=len(data), desc="Extracting features"):
+from joblib import Parallel, delayed
+import numpy as np
+
+def process_row(row):
     url = row["url"]
     label = row["label"]
-
     try:
         features = extract_features(url)
+        return features, label
     except Exception:
-        continue
+        return None
 
-    X.append(features)
-    y.append(label)
+results = Parallel(
+    n_jobs=-1,          # use all CPU cores
+    backend="loky"      # best for network / I/O
+)(
+    delayed(process_row)(row)
+    for _, row in tqdm(
+        data.iterrows(),
+        total=len(data),
+        desc="Extracting features"
+    )
+)
+
+# Collect results
+X = []
+y = []
+
+for result in results:
+    if result is not None:
+        features, label = result
+        X.append(features)
+        y.append(label)
 
 X = np.array(X)
 y = np.array(y)
