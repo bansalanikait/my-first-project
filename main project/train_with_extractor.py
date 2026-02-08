@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 # Load URL dataset
-data = pd.read_csv("dataset/urls.csv")
+data = pd.read_csv("dataset/urls.csv").sample(5000)
 
 X = []
 y = []
@@ -47,7 +47,8 @@ X_train, X_test, y_train, y_test = train_test_split(
 model = RandomForestClassifier(
     n_estimators=200,
     random_state=42,
-    verbose=1
+    verbose=1,
+    n_jobs=-1
 )
 
 model.fit(X_train, y_train)
