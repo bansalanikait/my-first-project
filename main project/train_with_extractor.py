@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import os
+from sklearn.calibration import CalibratedClassifierCV
 
 from sklearn.metrics import (
     confusion_matrix,
@@ -14,7 +15,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 # Load URL dataset
-data = pd.read_csv("dataset/urls.csv").sample(5000)
+data = pd.read_csv("dataset/urls.csv").sample(200)
 
 X = []
 y = []
@@ -30,8 +31,11 @@ def process_row(row):
     try:
         features = extract_features(url)
         return features, label
-    except Exception:
+    except Exception as e:
+        print("Feature extraction failed for:", url)
+        print("Error:", e)
         return None
+
 
 results = Parallel(
     n_jobs=-1,          # use all CPU cores
@@ -61,19 +65,38 @@ y = np.array(y)
 print("Feature shape:", X.shape)
 
 # Split
+print("Final dataset size:", len(X))
+print("Labels distribution:", np.unique(y, return_counts=True))
+
+if len(X) == 0:
+    raise RuntimeError("No features extracted. Dataset empty.")
+
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
 )
 
 # Train Random Forest
-model = RandomForestClassifier(
+base_model = RandomForestClassifier(
     n_estimators=200,
     random_state=42,
-    verbose=1,
-    n_jobs=-1
+    n_jobs=-1,
+    class_weight="balanced"
 )
 
-model.fit(X_train, y_train)
+calibrated_model = CalibratedClassifierCV(
+    base_model,
+    method="isotonic",
+    cv=5
+)
+
+calibrated_model.fit(X_train, y_train)
+
+model = calibrated_model
+
 
 # Evaluate
 y_pred = model.predict(X_test)
@@ -105,3 +128,7 @@ print(classification_report(
     y_pred,
     target_names=["Phishing", "Legitimate"]
 ))
+
+importances = model.feature_importances_
+for i, v in enumerate(importances):
+    print(i, round(v, 3))

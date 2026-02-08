@@ -20,36 +20,24 @@ proba = model.predict_proba(features)
 classes = model.classes_
 
 # Extract phishing & legit probabilities
-phishing_prob = proba[0][list(classes).index(-1)] * 100
-legit_prob = proba[0][list(classes).index(1)] * 100
+class_map = dict(zip(model.classes_, proba[0]))
 
-# Threshold-based decision
-THRESHOLD = 60
+phishing_prob = class_map.get(-1, 0) * 100
+legit_prob    = class_map.get(1, 0) * 100
 
-# Manual risk score (URL-only boost)
-risk_score = 0
 
-suspicious_keywords = ["login", "verify", "secure", "account", "paypal"]
-if any(k in url.lower() for k in suspicious_keywords):
-    risk_score += 20
 
-if url.startswith("http://"):
-    risk_score += 15
 
-if "-" in url:
-    risk_score += 10
-
-if ".xyz" in url:
-    risk_score += 20
-
-final_phishing_score = phishing_prob + risk_score
-
-print(f"Adjusted Phishing Score: {final_phishing_score:.2f}%")
-
-if final_phishing_score >= THRESHOLD:
-    print("⚠️ Phishing Website Detected!")
+if phishing_prob >= 80:
+    print("🚨 Phishing Website")
+elif phishing_prob >= 50:
+    print("⚠️ Suspicious Website")
 else:
     print("✅ Legitimate Website")
+
+
+
+
 
 
 print("Classes:", classes)

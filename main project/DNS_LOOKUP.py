@@ -9,23 +9,26 @@ stats = {
     "whois_fail": 0
 }
 
+
 def domain_age(domain):
     try:
         w = whois.whois(domain)
         creation = w.creation_date
 
         if creation is None:
-            stats["whois_fail"] += 1
-            return -1
+            return -1         # no creation date → suspicious
 
         if isinstance(creation, list):
             creation = creation[0]
 
         age_days = (datetime.now() - creation).days
         return 1 if age_days > 365 else -1
+
+    except whois.parser.PywhoisError:
+        return -1             # domain info invalid → phishing
     except Exception:
-        stats["whois_fail"] += 1
-        return -1
+        return 0              # firewall / timeout → unknown
+    
     
 
 
@@ -33,14 +36,13 @@ def domain_age(domain):
 dns_cache = {}
 
 def dns_record(domain):
-    if domain in dns_cache:
-        return dns_cache[domain]
     try:
         socket.gethostbyname(domain)
-        dns_cache[domain] = 1
-    except:
-        dns_cache[domain] = -1
-    return dns_cache[domain]
+        return 1              # resolves → legit signal
+    except socket.gaierror:
+        return -1             # domain does not exist → phishing
+    except Exception:
+        return 0              # other issues (firewall, OS) → unknown
     
 
 def domain_registration_length(domain):
@@ -59,8 +61,11 @@ def domain_registration_length(domain):
 
         length_days = (expiry - creation).days
         return 1 if length_days > 365 else -1
-    except Exception:
+
+    except whois.parser.PywhoisError:
         return -1
+    except Exception:
+        return 0
     
 
 import ssl
@@ -71,7 +76,10 @@ def ssl_final_state(domain):
         context = ssl.create_default_context()
         sock = socket.create_connection((domain, 443), timeout=3)
         with context.wrap_socket(sock, server_hostname=domain):
-            return 1
+            return 1           # valid SSL
+    except ssl.SSLError:
+        return -1              # invalid certificate → phishing
+    except socket.timeout:
+        return 0               # firewall / blocked
     except Exception:
-        stats["ssl_fail"] += 1
-        return -1
+        return 0

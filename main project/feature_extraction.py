@@ -2,15 +2,22 @@ import re
 from urllib.parse import urlparse
 from DNS_LOOKUP import domain_age,dns_record,domain_registration_length,ssl_final_state
 
+
 def extract_features(url):
+    if not url.startswith(("http://", "https://")):
+        url = "http://" + url
+
     features = []
+    
+
 
     parsed = urlparse(url)
     domain = parsed.netloc
     path = parsed.path
 
     # 1. URL length
-    features.append(1 if len(url) < 54 else -1)
+    features.append(1 if len(url) < 75 else -1)
+
 
     # 2. IP address in URL
     features.append(-1 if re.search(r"\d+\.\d+\.\d+\.\d+", url) else 1)
@@ -29,20 +36,22 @@ def extract_features(url):
     features.append(-1 if "-" in domain else 1)
 
     # 7. Subdomain count
-    features.append(-1 if domain.count('.') > 2 else 1)
+    features.append(domain.count('.'))
 
     # 8. HTTPS token misuse
-    features.append(-1 if "https" in domain.lower() else 1)
+    features.append(-1 if domain.lower().startswith("https") else 1)
 
     # 9. URL depth
-    features.append(-1 if path.count('/') > 4 else 1)
+    features.append(path.count('/'))
 
     # 10. Suspicious words
     suspicious_words = [
         "login", "verify", "update", "secure",
         "account", "bank", "confirm", "signin"
     ]
-    features.append(-1 if any(w in url.lower() for w in suspicious_words) else 1)
+    features.append(
+    sum(1 for w in suspicious_words if w in url.lower())
+    )
 
     # 11. Port in URL
     port = parsed.port
@@ -52,7 +61,7 @@ def extract_features(url):
     features.append(-1 if url.count('.') > 5 else 1)
 
     # 13. Domain length
-    features.append(-1 if len(domain) > 25 else 1)
+    features.append(len(domain))
 
     # 14. Path length
     features.append(-1 if len(path) > 30 else 1)
@@ -61,13 +70,13 @@ def extract_features(url):
     features.append(-1 if '%' in url else 1)
 
     # 16. Multiple query parameters
-    features.append(-1 if url.count('&') > 2 else 1)
+    features.append(url.count('&'))
 
     # 17. Excessive '=' symbols
-    features.append(-1 if url.count('=') > 2 else 1)
+    features.append(url.count('='))
 
     # 18. HTTP instead of HTTPS
-    features.append(-1 if url.startswith("http://") else 1)
+    features.append(1 if url.startswith("https://") else 0)
 
     # 19. Brand name abuse
     brands = ["paypal", "google", "facebook", "amazon", "apple", "bank"]
@@ -81,17 +90,17 @@ def extract_features(url):
     # Extract domain again (safe)
     domain = domain.split(':')[0]
 
-    # 21. DNS Record
-    features.append(dns_record(domain))
+    # 21–24. Network-based features (safe / optional)
+    try:
+        features.append(0.5 * dns_record(domain))
+        features.append(0.5 * domain_age(domain))
+        features.append(0.5 * domain_registration_length(domain))
+        features.append(0.5 * ssl_final_state(domain))
 
-    # 22. Age of domain
-    features.append(domain_age(domain))
+    except Exception:
+        # Unknown ≠ phishing
+        features.extend([0, 0, 0, 0])
 
-    # 23. Domain registration length
-    features.append(domain_registration_length(domain))
-
-    # 24. SSL final state
-    features.append(ssl_final_state(domain))
 
 
 
