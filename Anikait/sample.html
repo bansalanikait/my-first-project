@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Website Detector</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        input[type="url"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .safe { background-color: #d4edda; color: #155724; }
+        .phishing { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Phishing Website Detector</h1>
+        <p>Enter a URL to check if it's potentially a phishing site. Click "Detect" to analyze or "Report" to flag it.</p>
+        <input type="url" id="urlInput" placeholder="https://example.com" required>
+        <button id="detectBtn">Detect Phishing</button>
+        <button id="reportBtn">Report Website</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // Placeholder for detection logic (in a real app, this would call an API like Google's Safe Browsing or similar)
+        function detectPhishing(url) {
+            // Simulate detection: Check for common phishing indicators (e.g., suspicious domains)
+            const suspiciousPatterns = ['phish', 'fake', 'secure-login', 'bank-update'];
+            const isSuspicious = suspiciousPatterns.some(pattern => url.toLowerCase().includes(pattern));
+            return isSuspicious ? 'phishing' : 'safe';
+        }
+
+        document.getElementById('detectBtn').addEventListener('click', function() {
+            const url = document.getElementById('urlInput').value;
+            if (!url) {
+                alert('Please enter a URL.');
+                return;
+            }
+            const result = detectPhishing(url);
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = result;
+            resultDiv.textContent = result === 'phishing' ? 'Warning: This site may be phishing!' : 'This site appears safe.';
+        });
+
+        document.getElementById('reportBtn').addEventListener('click', function() {
+            const url = document.getElementById('urlInput').value;
+            if (!url) {
+                alert('Please enter a URL to report.');
+                return;
+            }
+            // In a real app, send to a reporting service like PhishTank or your backend
+            alert(`Reported: ${url}. Thank you for helping keep the web safe!`);
+        });
+    </script>
+</body>
+</html>

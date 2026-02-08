@@ -1,6 +1,6 @@
 import re
 from urllib.parse import urlparse
-from DNS_LOOKUP import domain_age,dns_record,domain_registration_length,ssl_final_state
+
 
 def extract_features(url):
     features = []
@@ -78,20 +78,6 @@ def extract_features(url):
     features.append(-1 if any(domain.endswith(tld) for tld in suspicious_tlds) else 1)
 
 
-    # Extract domain again (safe)
-    domain = domain.split(':')[0]
-
-    # 21. DNS Record
-    features.append(dns_record(domain))
-
-    # 22. Age of domain
-    features.append(domain_age(domain))
-
-    # 23. Domain registration length
-    features.append(domain_registration_length(domain))
-
-    # 24. SSL final state
-    features.append(ssl_final_state(domain))
 
 
 
