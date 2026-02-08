@@ -25,19 +25,22 @@ class_map = dict(zip(model.classes_, proba[0]))
 phishing_prob = class_map.get(-1, 0) * 100
 legit_prob    = class_map.get(1, 0) * 100
 
+proba = model.predict_proba(features)[0]
+classes = model.classes_
 
+class_map = dict(zip(classes, proba))
 
+phishing_prob = class_map.get(-1, 0) * 100
+legit_prob = class_map.get(1, 0) * 100
 
-if phishing_prob >= 80:
-    print("🚨 Phishing Website")
-elif phishing_prob >= 50:
-    print("⚠️ Suspicious Website")
+prediction = model.predict(features)[0]
+
+if prediction == -1:
+    print("⚠️ Phishing Website Detected!")
 else:
     print("✅ Legitimate Website")
 
-
-
-
+print(f"Confidence → Phishing: {phishing_prob:.2f}% | Legit: {legit_prob:.2f}%")
 
 
 print("Classes:", classes)

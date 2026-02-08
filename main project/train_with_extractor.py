@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 # Load URL dataset
-data = pd.read_csv("dataset/urls.csv").sample(200)
+data = pd.read_csv("dataset/urls.csv").sample(5000)
 
 X = []
 y = []
