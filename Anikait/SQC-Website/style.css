@@ -1,0 +1,244 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+    font-family: 'Orbitron', sans-serif;
+}
+
+body {
+    background: radial-gradient(circle at top, #0f2027, #000000);
+    color: #e0e0e0;
+}
+
+/* NAVBAR */
+.navbar {
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+    padding: 15px 50px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #00ffee;
+}
+
+.logo {
+    color: #00ffee;
+    letter-spacing: 3px;
+}
+
+/* NAV LINKS */
+.navbar ul {
+    list-style: none;
+    display: flex;
+    gap: 25px;
+}
+
+.navbar a {
+    text-decoration: none;
+    color: #e0e0e0;
+    transition: 0.3s;
+}
+
+.navbar a:hover {
+    color: #00ffee;
+}
+
+/* HERO */
+.hero {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background:
+        linear-gradient(transparent, black),
+        url("assets/images/robot-bg.jpg");
+    background-size: cover;
+    background-position: center;
+}
+
+.hero h2 {
+    font-size: 60px;
+    color: #00ffee;
+}
+
+.hero p {
+    margin-top: 15px;
+    font-size: 20px;
+}
+
+.hero button {
+    margin-top: 30px;
+    padding: 12px 30px;
+    border: 2px solid #00ffee;
+    background: transparent;
+    color: #00ffee;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.hero button:hover {
+    background: #00ffee;
+    color: black;
+}
+
+/* SECTIONS */
+section {
+    padding: 120px 80px;
+}
+
+/* PROJECTS */
+.cards {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.card {
+    background: rgba(0, 255, 238, 0.05);
+    border: 1px solid #00ffee;
+    padding: 30px;
+    width: 250px;
+    text-align: center;
+    border-radius: 10px;
+    transition: 0.4s;
+}
+
+.card:hover {
+    transform: translateY(-10px) scale(1.05);
+    box-shadow: 0 0 20px #00ffee;
+}
+/* LOADER */
+#loader {
+    position: fixed;
+    inset: 0;
+    background: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loader-content {
+    text-align: center;
+}
+
+.loader-content h1 {
+    color: #00ffee;
+    font-size: 60px;
+    letter-spacing: 6px;
+}
+
+.loader-content p {
+    margin: 15px 0;
+    color: #aaa;
+}
+
+/* Progress bar */
+.progress-bar {
+    width: 300px;
+    height: 8px;
+    border: 1px solid #00ffee;
+    margin-top: 20px;
+}
+
+.progress {
+    height: 100%;
+    width: 0;
+    background: #00ffee;
+    animation: load 3s linear forwards;
+}
+
+@keyframes load {
+    to {
+        width: 100%;
+    }
+}
+/* FLOATING ICONS */
+.floating-icons {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.floating-icons span {
+    position: absolute;
+    font-size: 30px;
+    opacity: 0.08;
+    animation: float 10s linear infinite;
+}
+
+/* Random placement */
+.floating-icons span:nth-child(1) { left: 10%; animation-duration: 12s; }
+.floating-icons span:nth-child(2) { left: 30%; animation-duration: 18s; }
+.floating-icons span:nth-child(3) { left: 50%; animation-duration: 15s; }
+.floating-icons span:nth-child(4) { left: 70%; animation-duration: 20s; }
+.floating-icons span:nth-child(5) { left: 90%; animation-duration: 14s; }
+
+@keyframes float {
+    from {
+        transform: translateY(100vh);
+    }
+    to {
+        transform: translateY(-10vh);
+    }
+}
+
+#projects h3 {
+    margin-top: 60px;
+    color: #00ffee;
+    letter-spacing: 2px;
+}
+
+#projects p {
+    margin-top: 10px;
+    opacity: 0.8;
+}
+.card {
+    text-decoration: none;
+    color: #e0e0e0;
+}
+.project-image {
+    width: 80%;
+    max-width: 900px;
+    margin: 40px auto;
+    border-radius: 12px;
+    border: 1px solid #00ffee;
+    box-shadow: 0 0 20px rgba(0,255,238,0.2);
+}
+
+.diagram {
+    width: 70%;
+    max-width: 700px;
+    margin: 30px auto;
+    display: block;
+    background: #000;
+    padding: 15px;
+    border-radius: 10px;
+}
+.timeline {
+    max-width: 700px;
+    margin: 30px auto;
+    text-align: left;
+    line-height: 1.8;
+}
+
+.timeline li {
+    margin-bottom: 10px;
+    border-left: 2px solid #00ffee;
+    padding-left: 15px;
+}
+
+
+
+

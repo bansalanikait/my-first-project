@@ -1,134 +1,110 @@
-import pandas as pd
-import numpy as np
-import pickle
+﻿import argparse
 import os
+import pickle
+
+import numpy as np
+import pandas as pd
+from joblib import Parallel, delayed
 from sklearn.calibration import CalibratedClassifierCV
-
-from sklearn.metrics import (
-    confusion_matrix,
-    classification_report
-)
-
-from feature_extraction import extract_features
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
-
-# Load URL dataset
-data = pd.read_csv("dataset/urls.csv").sample(5000)
-
-X = []
-y = []
-
 from tqdm import tqdm
 
-from joblib import Parallel, delayed
-import numpy as np
+from DNS_LOOKUP import stats
+from feature_extraction import extract_features
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', default='dataset/urls.csv')
+    parser.add_argument('--sample-size', type=int, default=5000)
+    parser.add_argument('--random-state', type=int, default=42)
+    parser.add_argument('--n-jobs', type=int, default=-1)
+    return parser.parse_args()
+
 
 def process_row(row):
-    url = row["url"]
-    label = row["label"]
+    url = row['url']
+    label = row['label']
     try:
-        features = extract_features(url)
-        return features, label
-    except Exception as e:
-        print("Feature extraction failed for:", url)
-        print("Error:", e)
+        return extract_features(url), label
+    except Exception as exc:
+        print(f'Feature extraction failed for: {url}')
+        print(f'Error: {exc}')
         return None
 
 
-results = Parallel(
-    n_jobs=-1,          # use all CPU cores
-    backend="loky"      # best for network / I/O
-)(
-    delayed(process_row)(row)
-    for _, row in tqdm(
-        data.iterrows(),
-        total=len(data),
-        desc="Extracting features"
+def main():
+    args = parse_args()
+
+    data = pd.read_csv(args.dataset)
+    if args.sample_size and args.sample_size > 0 and args.sample_size < len(data):
+        data = data.sample(n=args.sample_size, random_state=args.random_state)
+
+    results = Parallel(n_jobs=args.n_jobs, backend='loky')(
+        delayed(process_row)(row)
+        for _, row in tqdm(data.iterrows(), total=len(data), desc='Extracting features')
     )
-)
 
-# Collect results
-X = []
-y = []
+    X = []
+    y = []
+    for result in results:
+        if result is not None:
+            features, label = result
+            X.append(features)
+            y.append(label)
 
-for result in results:
-    if result is not None:
-        features, label = result
-        X.append(features)
-        y.append(label)
+    X = np.array(X)
+    y = np.array(y)
 
-X = np.array(X)
-y = np.array(y)
+    print('Feature shape:', X.shape)
+    print('Final dataset size:', len(X))
+    print('Labels distribution:', np.unique(y, return_counts=True))
 
-print("Feature shape:", X.shape)
+    if len(X) == 0:
+        raise RuntimeError('No features extracted. Dataset empty.')
 
-# Split
-print("Final dataset size:", len(X))
-print("Labels distribution:", np.unique(y, return_counts=True))
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=0.2,
+        random_state=args.random_state,
+        stratify=y
+    )
 
-if len(X) == 0:
-    raise RuntimeError("No features extracted. Dataset empty.")
+    base_model = RandomForestClassifier(
+        n_estimators=200,
+        random_state=args.random_state,
+        n_jobs=-1,
+        class_weight='balanced'
+    )
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size=0.2,
-    random_state=42,
-    stratify=y
-)
+    model = CalibratedClassifierCV(base_model, method='isotonic', cv=5)
+    model.fit(X_train, y_train)
 
-# Train Random Forest
-base_model = RandomForestClassifier(
-    n_estimators=200,
-    random_state=42,
-    n_jobs=-1,
-    class_weight="balanced"
-)
+    y_pred = model.predict(X_test)
+    print('Accuracy:', accuracy_score(y_test, y_pred))
 
-calibrated_model = CalibratedClassifierCV(
-    base_model,
-    method="isotonic",
-    cv=5
-)
+    os.makedirs('model', exist_ok=True)
+    with open('model/model.pkl', 'wb') as f:
+        pickle.dump(model, f)
 
-calibrated_model.fit(X_train, y_train)
+    print('Model retrained using extractor and saved to model/model.pkl')
 
-model = calibrated_model
+    print('\nFeature extraction summary:')
+    print(f"DNS failures handled: {stats['dns_fail']}")
+    print(f"WHOIS failures handled: {stats['whois_fail']}")
+    print(f"SSL failures handled: {stats['ssl_fail']}")
 
+    print('\nConfusion Matrix:')
+    print(confusion_matrix(y_test, y_pred))
 
-# Evaluate
-y_pred = model.predict(X_test)
-print("Accuracy:", accuracy_score(y_test, y_pred))
+    print('\nClassification Report:')
+    print(classification_report(y_test, y_pred, target_names=['Phishing', 'Legitimate']))
 
-# Save model
-os.makedirs("model", exist_ok=True)
-with open("model/model.pkl", "wb") as f:
-    pickle.dump(model, f)
-
-print("✅ Model retrained using extractor")
-
-# Detects how many times the error came due to non rechable sites
-from DNS_LOOKUP import stats
-
-print("\nFeature extraction summary:")
-print(f"DNS failures handled: {stats['dns_fail']}")
-print(f"WHOIS failures handled: {stats['whois_fail']}")
-print(f"SSL failures handled: {stats['ssl_fail']}")
+    print('\nFeature importances: unavailable for CalibratedClassifierCV wrapper.')
 
 
-print("\nConfusion Matrix:")
-cm = confusion_matrix(y_test, y_pred)
-print(cm)
-
-print("\nClassification Report:")
-print(classification_report(
-    y_test,
-    y_pred,
-    target_names=["Phishing", "Legitimate"]
-))
-
-importances = model.feature_importances_
-for i, v in enumerate(importances):
-    print(i, round(v, 3))
+if __name__ == '__main__':
+    main()

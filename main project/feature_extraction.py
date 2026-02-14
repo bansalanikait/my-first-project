@@ -1,117 +1,77 @@
-import re
+﻿import re
 from urllib.parse import urlparse
-from DNS_LOOKUP import domain_age,dns_record,domain_registration_length,ssl_final_state
+
+from DNS_LOOKUP import dns_record, domain_age, domain_registration_length, ssl_final_state
+
+
+SUSPICIOUS_WORDS = [
+    'login', 'verify', 'update', 'secure',
+    'account', 'bank', 'confirm', 'signin'
+]
+SUSPICIOUS_TLDS = ['.tk', '.ml', '.ga', '.cf', '.xyz']
+SHORTENERS = ['bit.ly', 'tinyurl', 'goo.gl', 'ow.ly', 't.co']
+BRANDS = ['paypal', 'google', 'facebook', 'amazon', 'apple', 'bank']
 
 
 def extract_features(url):
-    if not url.startswith(("http://", "https://")):
-        url = "http://" + url
+    if not isinstance(url, str):
+        url = str(url)
 
-    features = []
-    
-
+    if not url.startswith(('http://', 'https://')):
+        url = 'http://' + url
 
     parsed = urlparse(url)
-    domain = parsed.netloc
-    path = parsed.path
+    hostname = (parsed.hostname or '').lower()
+    path = parsed.path or ''
 
-    # 1. URL length
+    features = []
+
+    # 1-20: lexical/url structure features
     features.append(1 if len(url) < 75 else -1)
-
-
-    # 2. IP address in URL
-    features.append(-1 if re.search(r"\d+\.\d+\.\d+\.\d+", url) else 1)
-
-    # 3. Shortening service
-    shortening = ["bit.ly", "tinyurl", "goo.gl", "ow.ly", "t.co"]
-    features.append(-1 if any(s in url for s in shortening) else 1)
-
-    # 4. '@' symbol
+    features.append(-1 if re.search(r'\d+\.\d+\.\d+\.\d+', url) else 1)
+    features.append(-1 if any(s in url for s in SHORTENERS) else 1)
     features.append(-1 if '@' in url else 1)
-
-    # 5. Double slash redirect
-    features.append(-1 if url.rfind("//") > 6 else 1)
-
-    # 6. Hyphen in domain
-    features.append(-1 if "-" in domain else 1)
-
-    # 7. Subdomain count
-    features.append(domain.count('.'))
-
-    # 8. HTTPS token misuse
-    features.append(-1 if domain.lower().startswith("https") else 1)
-
-    # 9. URL depth
+    features.append(-1 if url.rfind('//') > 6 else 1)
+    features.append(-1 if '-' in hostname else 1)
+    features.append(hostname.count('.'))
+    features.append(-1 if hostname.startswith('https') else 1)
     features.append(path.count('/'))
+    features.append(sum(1 for w in SUSPICIOUS_WORDS if w in url.lower()))
 
-    # 10. Suspicious words
-    suspicious_words = [
-        "login", "verify", "update", "secure",
-        "account", "bank", "confirm", "signin"
-    ]
-    features.append(
-    sum(1 for w in suspicious_words if w in url.lower())
-    )
-
-    # 11. Port in URL
-    port = parsed.port
+    try:
+        port = parsed.port
+    except ValueError:
+        port = None
     features.append(1 if port is None or port in [80, 443] else -1)
 
-    # 12. Number of dots in URL
     features.append(-1 if url.count('.') > 5 else 1)
-
-    # 13. Domain length
-    features.append(len(domain))
-
-    # 14. Path length
+    features.append(len(hostname))
     features.append(-1 if len(path) > 30 else 1)
-
-    # 15. URL encoding
     features.append(-1 if '%' in url else 1)
-
-    # 16. Multiple query parameters
     features.append(url.count('&'))
-
-    # 17. Excessive '=' symbols
     features.append(url.count('='))
+    features.append(1 if url.startswith('https://') else 0)
+    features.append(-1 if any(b in hostname and len(hostname) > len(b) + 5 for b in BRANDS) else 1)
+    features.append(-1 if any(hostname.endswith(tld) for tld in SUSPICIOUS_TLDS) else 1)
 
-    # 18. HTTP instead of HTTPS
-    features.append(1 if url.startswith("https://") else 0)
-
-    # 19. Brand name abuse
-    brands = ["paypal", "google", "facebook", "amazon", "apple", "bank"]
-    features.append(-1 if any(b in domain.lower() and len(domain) > len(b) + 5 for b in brands) else 1)
-
-    # 20. Suspicious TLD
-    suspicious_tlds = [".tk", ".ml", ".ga", ".cf", ".xyz"]
-    features.append(-1 if any(domain.endswith(tld) for tld in suspicious_tlds) else 1)
-
-
-    # Extract domain again (safe)
-    domain = domain.split(':')[0]
-
-    # 21–24. Network-based features (safe / optional)
+    # 21-24: network-derived features (can return 0 if unknown)
     try:
-        features.append(0.5 * dns_record(domain))
-        features.append(0.5 * domain_age(domain))
-        features.append(0.5 * domain_registration_length(domain))
-        features.append(0.5 * ssl_final_state(domain))
-
+        features.append(0.5 * dns_record(hostname))
+        features.append(0.5 * domain_age(hostname))
+        features.append(0.5 * domain_registration_length(hostname))
+        features.append(0.5 * ssl_final_state(hostname))
     except Exception:
-        # Unknown ≠ phishing
         features.extend([0, 0, 0, 0])
 
-
-
-
-    if any(domain.endswith(tld) for tld in suspicious_tlds):
+    # 25-26: extra suspicious-tld penalties kept for compatibility.
+    if any(hostname.endswith(tld) for tld in SUSPICIOUS_TLDS):
         features.append(-1)
-        features.append(-1)  # extra penalty
+        features.append(-1)
     else:
         features.append(1)
         features.append(1)
 
-    # Fill remaining features (for dataset compatibility)
+    # 27-30: reserved/padding for compatibility.
     while len(features) < 30:
         features.append(0)
 
